@@ -51,6 +51,25 @@ String apiKeyValue = "baeb03e1f140d3009647a77cc93f8828";
 const char* serverName = "https://persona-hris.com/api/nfc";
 String devname;
 
+/******************************************************************************
+  CALLBACK NOTIFIER FOR OTA
+ *****************************************************************************/
+void update_started() {
+  Serial.println("CALLBACK:  HTTP update process started");
+}
+
+void update_finished() {
+  Serial.println("CALLBACK:  HTTP update process finished");
+}
+
+void update_progress(int cur, int total) {
+  Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
+}
+
+void update_error(int err) {
+  Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
+}
+
 void setup()
 {
   pinMode(Red, OUTPUT);
@@ -352,6 +371,13 @@ void FirmwareUpdate()
   ESPhttpUpdate.setLedPin(Red, LOW);
   WiFiClientSecure client;
   client.setInsecure();
+
+  // Added optional callback notifiers
+   ESPhttpUpdate.onStart(update_started);
+   ESPhttpUpdate.onEnd(update_finished);
+   ESPhttpUpdate.onProgress(update_progress);
+   ESPhttpUpdate.onError(update_error);
+    
   delay(100);
   t_httpUpdate_return ret = ESPhttpUpdate.update(client, URL_fw_Bin);
   switch (ret)
