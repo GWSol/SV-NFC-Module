@@ -345,6 +345,7 @@ void Card_detected(int duration)
 *****************************************************************************/
 void FirmwareUpdate()
 {
+  Serial.println("Initializing OTA update...");
   digitalWrite(Blue, LOW);
   ESPhttpUpdate.setLedPin(Red, LOW);
   WiFiClientSecure client;
