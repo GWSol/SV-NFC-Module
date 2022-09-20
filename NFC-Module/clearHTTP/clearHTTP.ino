@@ -275,6 +275,7 @@ void Send_live_data(String UIDread, String location, String devid)
       if (httpsResponseBody.substring(26, 42) == "\"Access Granted\"" ||
           httpsResponseBody.substring(26, 42) == "\"NFC Registered\"")
       {
+        Serial.println("Code is successfully updated. This is a new feature.");
         digitalWrite(Beep, HIGH);
         delay(300);
         digitalWrite(Beep, LOW);
@@ -285,6 +286,7 @@ void Send_live_data(String UIDread, String location, String devid)
       if (httpsResponseBody.substring(27, 52) == "\"NFC UID not found on DB\"" ||
           httpsResponseBody.substring(27, 43) == "\"Wrong API key.\"")
       {
+        Serial.println("Code is successfully updated. This is a new feature.");
         for (int i = 0; i < 2; i++)
         {
           Enable_red_LED();
@@ -350,9 +352,7 @@ void FirmwareUpdate()
   ESPhttpUpdate.setLedPin(Red, LOW);
   WiFiClientSecure client;
   client.setInsecure();
-  delay(50);
-  //client.setFingerprint(Fingerprint);
-  delay(50);
+  delay(100);
   t_httpUpdate_return ret = ESPhttpUpdate.update(client, URL_fw_Bin);
   switch (ret)
   {
