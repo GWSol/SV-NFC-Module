@@ -19,7 +19,7 @@
 #include <CertStoreBearSSL.h>
 BearSSL::CertStore certStore;
 
-const String FirmwareVer = {"1.2"};
+const String FirmwareVer = {"1.3"};
 #define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/version.txt"
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/clearHTTPS.bin"
 // URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
@@ -338,7 +338,7 @@ void Send_live_data(String UIDread, String location, String devid)
 
   if (httpsResponseCode == 200) {
     // Debug print line, comment when not needed
-    Serial.println("Code is successfully updated to clearHTTPS v1.2");
+    Serial.println("Code is successfully updated to clearHTTPS v1.3");
     Serial.print("Response Code: ");
     Serial.println(httpsResponseCode);
     Serial.print("Response Body: ");
@@ -442,7 +442,7 @@ void FirmwareUpdate() {
     Serial.println("Device is already on the latest firmware version...");
   }
   else {
-    Serial.println("New firmware detected");
+    Serial.println("New firmware detected...");
     digitalWrite(Blue, LOW);
     ESPhttpUpdate.setLedPin(Red, LOW);
     //WiFiClientSecure client;
