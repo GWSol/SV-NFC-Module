@@ -262,12 +262,11 @@ void Send_live_data(String UIDread, String location, String devid)
   Serial.print("httpsRequestData: ");
   Serial.println(httpsRequestData);
 
-  //Send HTTPS POST request
+  //Send HTTPS POST request,
   int httpsResponseCode = httpsPost.POST(httpsRequestData);
-
+  //Retrieve response body
   String httpsResponseBody = httpsPost.getString();
 
-  //Changed "=" operator to "=="
   if (httpsResponseCode == 200) {
     //Debug print line, comment when not needed
     //Serial.println("Code is successfully updated. This is a feature.");
@@ -287,7 +286,7 @@ void Send_live_data(String UIDread, String location, String devid)
     else if (httpsResponseBody.substring(11, 16) == "false") {
       if (httpsResponseBody.substring(27, 52) == "\"NFC UID not found on DB\"" ||
           httpsResponseBody.substring(27, 43) == "\"Wrong API key.\"") {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
           Enable_red_LED();
           delay(250);
           Disable_LED();
