@@ -166,6 +166,9 @@ void setup() {
   // Initialize MFRC522
   mfrc522.PCD_Init();
 
+  // Print firmware version
+  Serial.println("Using clearHTTPS v" + FirmwareVer);
+
   // Initialize Button
   updateButton.attachLongPressStart(FirmwareUpdate);
   resetButton.attachClick(Reset);
@@ -337,8 +340,6 @@ void Send_live_data(String UIDread, String location, String devid)
   String httpsResponseBody = httpsPost.getString();
 
   if (httpsResponseCode == 200) {
-    // Debug print line, comment when not needed
-    Serial.println("Code is successfully updated to clearHTTPS v1.3");
     Serial.print("Response Code: ");
     Serial.println(httpsResponseCode);
     Serial.print("Response Body: ");
