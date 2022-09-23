@@ -6,13 +6,13 @@
 #include <WiFiClientSecure.h>
 #include <OneButton.h>
 
-//Include LittleFS header
+// Include LittleFS header
 #include <LittleFS.h>
 
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTP/clearHTTP.bin"
-//URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
+// URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
 
-//Get fingerprint of 'https' by visiting this link https://www.grc.com/fingerprints.htm
+// Get fingerprint of 'https' by visiting this link https://www.grc.com/fingerprints.htm
 //#define Fingerprint "70 94 DE DD E6 C4 69 48 3A 92 70 A1 48 56 78 2D 18 64 E0 B7"
 
 OneButton updateButton(D1, true);
@@ -32,12 +32,12 @@ WiFiManager wifiManager;
 
 OneButton resetButton(D1, true);
 
-//Assign location variable for AP config
+// Assign location variable for AP config
 char output[40] = "";
 String Location = "room1";
 char send_location[40] = "";
 
-//Flag for saving data
+// Flag for saving data
 bool shouldSaveConfig = false;
 
 /******************************************************************************
@@ -56,7 +56,7 @@ String apiKeyValue = "baeb03e1f140d3009647a77cc93f8828";
 const char* serverName = "https://persona-hris.com/api/nfc";
 String devname;
 
-//Recovery name on FS format
+// Recovery name on FS format
 //const String def_devname = "S0421CLA0012";
 
 /******************************************************************************
@@ -88,22 +88,22 @@ void setup() {
 
   Serial.begin(115200);
 
-  //Recovery code on FS format
+  // Recovery code on FS format
   //WiFi.hostname(def_devname);
 
-  //JSON config readings
+  // JSON config readings
   FS_LittleFS();
 
-  //Wifi AP config
+  // Wifi AP config
   AP_Wifi();
 
-  //Initialize SPI bus
+  // Initialize SPI bus
   SPI.begin();
 
-  //Initialize MFRC522
+  // Initialize MFRC522
   mfrc522.PCD_Init();
 
-  //Initialize Button
+  // Initialize Button
   updateButton.attachLongPressStart(FirmwareUpdate);
   resetButton.attachClick(Reset);
 }
@@ -143,18 +143,18 @@ void saveConfigCallback() {
   INITIALIZE LittleFS AND AP CONFIG ON BOOT UP
 ******************************************************************************/
 void FS_LittleFS() {
-  //Initialize LittleFS
+  // Initialize LittleFS
   if (!LittleFS.begin()) {
     Serial.println("An error has occurred while mounting LittleFS...");
     return;
   }
   
   Enable_red_LED();
-  //Read config from FS JSON
+  // Read config from FS JSON
   Serial.println("Mounting FS...");
 
   if (LittleFS.exists("/config.json")) {
-    //File exists, reading and loading
+    // File exists, reading and loading
     Serial.println("Reading config file...");
     File configFile = LittleFS.open("/config.json", "r");
     if (configFile) {
@@ -244,32 +244,32 @@ void Reset() {
 ******************************************************************************/
 void Send_live_data(String UIDread, String location, String devid)
 {
-  //Added code to setup HTTPS client due to moving to HTTPS server
+  // Added code to setup HTTPS client due to moving to HTTPS server
   std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
   client->setInsecure();
 
-  //Changed to HTTPClient httpsPost;
+  // Changed to HTTPClient httpsPost;
   HTTPClient httpsPost;
 
-  //Your Domain name with URL path or IP address with path
+  // Your Domain name with URL path or IP address with path
   httpsPost.begin(*client, serverName);
 
-  //Specify content-type header
+  // Specify content-type header
   httpsPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-  //Prepare your HTTPS POST request data
+  // Prepare your HTTPS POST request data
   String httpsRequestData = "api_key=" + apiKeyValue + "&cardUID=" + UIDread
                             + "&Location=" + location + "&DevUID=" + devid + "";
   Serial.print("httpsRequestData: ");
   Serial.println(httpsRequestData);
 
-  //Send HTTPS POST request,
+  // Send HTTPS POST request,
   int httpsResponseCode = httpsPost.POST(httpsRequestData);
-  //Retrieve response body
+  // Retrieve response body
   String httpsResponseBody = httpsPost.getString();
 
   if (httpsResponseCode == 200) {
-    //Debug print line, comment when not needed
+    // Debug print line, comment when not needed
     //Serial.println("Code is successfully updated. This is a feature.");
     Serial.print("Response Code: ");
     Serial.println(httpsResponseCode);
@@ -301,7 +301,7 @@ void Send_live_data(String UIDread, String location, String devid)
     Serial.println(httpsResponseCode);
   }
   
-  //Free resources
+  // Free resources
   httpsPost.end();
 }
 
@@ -349,7 +349,7 @@ void FirmwareUpdate() {
   WiFiClientSecure client;
   client.setInsecure();
 
-  //Added optional callback notifiers
+  // Added optional callback notifiers
   ESPhttpUpdate.onStart(update_started);
   ESPhttpUpdate.onEnd(update_finished);
   ESPhttpUpdate.onProgress(update_progress);
@@ -390,7 +390,7 @@ void OTAerror() {
 void readcard() {
   Card_detected(200);
   char UIDstr[32] = "";
-  //Insert (byte array, length, char array for output)
+  // Insert (byte array, length, char array for output)
   array_to_string(mfrc522.uid.uidByte, 4, UIDstr);
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
@@ -407,7 +407,7 @@ void initializeDevID() {
 String getdevname() {
   LittleFS.begin();
 
-  //Block to check if iotconfig.txt exists
+  // Block to check if iotconfig.txt exists
   //  if (!LittleFS.exists("/iotconfig.txt"))
   //  {
   //    Serial.println("iotconfig.txt does not exist!");

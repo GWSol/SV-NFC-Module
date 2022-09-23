@@ -6,24 +6,55 @@
 #include <WiFiClientSecure.h>
 #include <OneButton.h>
 
-//Include time header
+// Include time header
 #include <time.h>
 
-//Include FS header
+// Include FS header
 #include <FS.h>
 
-//Include LittleFS header
+// Include LittleFS header
 #include <LittleFS.h>
 
-//Declare global CertStore
+// Declare global CertStore
 #include <CertStoreBearSSL.h>
 BearSSL::CertStore certStore;
 
+const String FirmwareVer = {"1.1"};
+#define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTP/version.txt"
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTP/clearHTTP.bin"
-//URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
+// URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
+const char *host = "raw.githubusercontent.com";
+const int httpsPort = 443;
 
-//Get fingerprint of 'https' by visiting this link https://www.grc.com/fingerprints.htm
-//#define Fingerprint "70 94 DE DD E6 C4 69 48 3A 92 70 A1 48 56 78 2D 18 64 E0 B7"
+// DigiCert High Assurance EV Root CA
+const char trustRoot[] PROGMEM = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+-----END CERTIFICATE-----
+)EOF";
+X509List cert(trustRoot);
+
+extern const unsigned char caCert[] PROGMEM;
+extern const unsigned int caCertLen;
 
 OneButton updateButton(D1, true);
 
@@ -42,12 +73,12 @@ WiFiManager wifiManager;
 
 OneButton resetButton(D1, true);
 
-//Assign location variable for AP config
+// Assign location variable for AP config
 char output[40] = "";
 String Location = "room1";
 char send_location[40] = "";
 
-//Flag for saving data
+// Flag for saving data
 bool shouldSaveConfig = false;
 
 /******************************************************************************
@@ -66,7 +97,7 @@ String apiKeyValue = "baeb03e1f140d3009647a77cc93f8828";
 const char* serverName = "https://persona-hris.com/api/nfc";
 String devname;
 
-//Recovery name on FS format
+// Recovery name on FS format
 //const String def_devname = "S0421CLA0012";
 
 /******************************************************************************
@@ -92,7 +123,7 @@ void update_error(int err) {
   SET TIME VIA NTP, REQUIRED FOR x.509 VALIDATION
  *****************************************************************************/
 void setClock() {
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov"); //UTC time standard
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov"); // UTC time standard
 
   Serial.print(F("Waiting for NTP time sync: "));
   time_t now = time(nullptr);
@@ -109,7 +140,7 @@ void setClock() {
   Serial.print(F("Current time: "));
   Serial.print(asctime(&timeinfo));
 }
- 
+
 /******************************************************************************
   SYSTEM SETUP ON BOOT
  *****************************************************************************/
@@ -120,25 +151,22 @@ void setup() {
 
   Serial.begin(115200);
 
-  //Recovery code on FS format
+  // Recovery code on FS format
   //WiFi.hostname(def_devname);
 
-  //JSON config readings
+  // JSON config readings
   FS_LittleFS();
 
-  //Wifi AP config
+  // Wifi AP config
   AP_Wifi();
 
-  //Initialize SPI bus
+  // Initialize SPI bus
   SPI.begin();
 
-  //Initialize MFRC522
+  // Initialize MFRC522
   mfrc522.PCD_Init();
-  
-  //Initialize Certificates
-  Certs_Init();
-  
-  //Initialize Button
+
+  // Initialize Button
   updateButton.attachLongPressStart(FirmwareUpdate);
   resetButton.attachClick(Reset);
 }
@@ -178,18 +206,23 @@ void saveConfigCallback() {
   INITIALIZE LittleFS AND AP CONFIG ON BOOT UP
  *****************************************************************************/
 void FS_LittleFS() {
-  //Initialize LittleFS
+  // Debug block to format FS before initialization
+  //  if (LittleFS.format()) {
+  //    Serial.println("LittleFS format successful...");
+  //  }
+
+  // Initialize LittleFS
   if (!LittleFS.begin()) {
     Serial.println("An error has occurred while mounting LittleFS...");
     return;
   }
-  
+
   Enable_red_LED();
-  //Read config from FS JSON
+  // Read config from FS JSON
   Serial.println("Mounting FS...");
 
   if (LittleFS.exists("/config.json")) {
-    //File exists, reading and loading
+    // File exists, reading and loading
     Serial.println("Reading config file...");
     File configFile = LittleFS.open("/config.json", "r");
     if (configFile) {
@@ -201,9 +234,9 @@ void FS_LittleFS() {
       configFile.readBytes(buf.get(), size);
       DynamicJsonBuffer jsonBuffer;
       JsonObject& json = jsonBuffer.parseObject(buf.get());
-      
+
       json.printTo(Serial);
-      
+
       if (json.success()) {
         Serial.println("\nParsed JSON...");
         strcpy(output, json["output"]);
@@ -227,7 +260,7 @@ void AP_Wifi() {
   wifiManager.autoConnect((const char*)getdevname().c_str());
   strcpy(output, custom_output.getValue());
   strcpy(send_location, custom_output.getValue());
-  
+
   if (shouldSaveConfig) {
     Serial.println("Saving config...");
     DynamicJsonBuffer jsonBuffer;
@@ -259,22 +292,6 @@ void array_to_string(byte array[], unsigned int len, char buffer[]) {
 }
 
 /******************************************************************************
-  CERTIFICATE INITIALIZATION AND READ
-*****************************************************************************/
-void Certs_Init() {
-  int numCerts = certStore.initCertStore(LittleFS, PSTR("/certs.idx"), PSTR("/certs.ar"));
-  Serial.print(F("Number of CA certs read: "));
-  Serial.println(numCerts);
-
-  if (numCerts == 0) {
-    Serial.println(F("No certs found. Make sure to run certs-from-mozill.py and upload certs.ar..."));
-    
-    //Cannot connect to anything w/o certs
-    return;
-  }
-}
-
-/******************************************************************************
   RESET BUTTON
 *****************************************************************************/
 void Reset() {
@@ -295,32 +312,32 @@ void Reset() {
 *****************************************************************************/
 void Send_live_data(String UIDread, String location, String devid)
 {
-  //Added code to setup HTTPS client due to moving to HTTPS server
+  // Added code to setup HTTPS client due to moving to HTTPS server
   std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
   client->setInsecure();
 
-  //Changed to HTTPClient httpsPost;
+  // Changed to HTTPClient httpsPost;
   HTTPClient httpsPost;
 
-  //Your Domain name with URL path or IP address with path
+  // Your Domain name with URL path or IP address with path
   httpsPost.begin(*client, serverName);
 
-  //Specify content-type header
+  // Specify content-type header
   httpsPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-  //Prepare your HTTPS POST request data
+  // Prepare your HTTPS POST request data
   String httpsRequestData = "api_key=" + apiKeyValue + "&cardUID=" + UIDread
                             + "&Location=" + location + "&DevUID=" + devid + "";
   Serial.print("httpsRequestData: ");
   Serial.println(httpsRequestData);
 
-  //Send HTTPS POST request,
+  // Send HTTPS POST request,
   int httpsResponseCode = httpsPost.POST(httpsRequestData);
-  //Retrieve response body
+  // Retrieve response body
   String httpsResponseBody = httpsPost.getString();
 
   if (httpsResponseCode == 200) {
-    //Debug print line, comment when not needed
+    // Debug print line, comment when not needed
     //Serial.println("Code is successfully updated. This is a feature.");
     Serial.print("Response Code: ");
     Serial.println(httpsResponseCode);
@@ -351,8 +368,8 @@ void Send_live_data(String UIDread, String location, String devid)
     Serial.print("Error code: ");
     Serial.println(httpsResponseCode);
   }
-  
-  //Free resources
+
+  // Free resources
   httpsPost.end();
 }
 
@@ -395,34 +412,66 @@ void Card_detected(int duration) {
 *****************************************************************************/
 void FirmwareUpdate() {
   Serial.println("Initializing OTA update...");
-  digitalWrite(Blue, LOW);
-  ESPhttpUpdate.setLedPin(Red, LOW);
+
+  setClock();
+
   WiFiClientSecure client;
-  client.setInsecure();
+  client.setTrustAnchors(&cert);
+  if (!client.connect(host, httpsPort)) {
+    Serial.println("Connection failed...");
+    return;
+  }
 
-  //Added optional callback notifiers
-  ESPhttpUpdate.onStart(update_started);
-  ESPhttpUpdate.onEnd(update_finished);
-  ESPhttpUpdate.onProgress(update_progress);
-  ESPhttpUpdate.onError(update_error);
+  client.print(String("GET ") + URL_fw_Version + " HTTP/1.1\r\n" +
+                "Host: " + host + "\r\n" +
+                "User-Agent: BuildFailureDetectorESP8266\r\n" +
+                "Connection: close\r\n\r\n");
 
-  delay(100);
-  t_httpUpdate_return ret = ESPhttpUpdate.update(client, URL_fw_Bin);
-  switch (ret) {
-    case HTTP_UPDATE_FAILED:
-      Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s/n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
-      delay(50);
-      OTAerror();
-      delay(50);
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("Headers received...");
       break;
+    }
+  }
 
-    case HTTP_UPDATE_NO_UPDATES:
-      Serial.println("HTTP_UPDATE_NO_UPDATES");
-      break;
-
-    case HTTP_UPDATE_OK:
-      Serial.println("HTTP_UPDATE_OK");
-      break;
+  String payload = client.readStringUntil('\n');
+  payload.trim();
+  
+  if (payload.equals(FirmwareVer)) {
+    Serial.println("Device is already on the latest firmware version...");
+  }
+  else {
+    Serial.println("New firmware detected");
+    digitalWrite(Blue, LOW);
+    ESPhttpUpdate.setLedPin(Red, LOW);
+    //WiFiClientSecure client;
+    //client.setInsecure();
+    
+    // Added optional callback notifiers
+    ESPhttpUpdate.onStart(update_started);
+    ESPhttpUpdate.onEnd(update_finished);
+    ESPhttpUpdate.onProgress(update_progress);
+    ESPhttpUpdate.onError(update_error);
+  
+    delay(100);
+    t_httpUpdate_return ret = ESPhttpUpdate.update(client, URL_fw_Bin);
+    switch (ret) {
+      case HTTP_UPDATE_FAILED:
+        Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s/n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+        delay(50);
+        OTAerror();
+        delay(50);
+        break;
+  
+      case HTTP_UPDATE_NO_UPDATES:
+        Serial.println("HTTP_UPDATE_NO_UPDATES");
+        break;
+  
+      case HTTP_UPDATE_OK:
+        Serial.println("HTTP_UPDATE_OK");
+        break;
+    }
   }
 }
 
@@ -441,7 +490,7 @@ void OTAerror() {
 void readcard() {
   Card_detected(200);
   char UIDstr[32] = "";
-  //Insert (byte array, length, char array for output)
+  // Insert (byte array, length, char array for output)
   array_to_string(mfrc522.uid.uidByte, 4, UIDstr);
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
@@ -458,7 +507,7 @@ void initializeDevID() {
 String getdevname() {
   LittleFS.begin();
 
-  //Block to check if iotconfig.txt exists
+  // Block to check if iotconfig.txt exists
   //  if (!LittleFS.exists("/iotconfig.txt"))
   //  {
   //    Serial.println("iotconfig.txt does not exist!");
