@@ -19,9 +19,9 @@
 #include <CertStoreBearSSL.h>
 BearSSL::CertStore certStore;
 
-const String FirmwareVer = {"1.1"};
-#define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTP/version.txt"
-#define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTP/clearHTTP.bin"
+const String FirmwareVer = {"1.2"};
+#define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/version.txt"
+#define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/clearHTTPS.bin"
 // URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
 const char *host = "raw.githubusercontent.com";
 const int httpsPort = 443;
@@ -338,7 +338,7 @@ void Send_live_data(String UIDread, String location, String devid)
 
   if (httpsResponseCode == 200) {
     // Debug print line, comment when not needed
-    //Serial.println("Code is successfully updated. This is a feature.");
+    Serial.println("Code is successfully updated to clearHTTPS v1.2");
     Serial.print("Response Code: ");
     Serial.println(httpsResponseCode);
     Serial.print("Response Body: ");
