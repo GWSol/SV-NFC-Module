@@ -96,13 +96,13 @@ void setup() {
   //Wifi AP config
   AP_Wifi();
 
-  // Initialize SPI bus
+  //Initialize SPI bus
   SPI.begin();
 
-  // Initialize MFRC522
+  //Initialize MFRC522
   mfrc522.PCD_Init();
 
-  // Initialize Button
+  //Initialize Button
   updateButton.attachLongPressStart(FirmwareUpdate);
   resetButton.attachClick(Reset);
 }

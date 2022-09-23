@@ -6,8 +6,18 @@
 #include <WiFiClientSecure.h>
 #include <OneButton.h>
 
+//Include time header
+#include <time.h>
+
+//Include FS header
+#include <FS.h>
+
 //Include LittleFS header
 #include <LittleFS.h>
+
+//Declare global CertStore
+#include <CertStoreBearSSL.h>
+BearSSL::CertStore certStore;
 
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTP/clearHTTP.bin"
 //URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
@@ -78,6 +88,28 @@ void update_error(int err) {
 }
 
 /******************************************************************************
+  SET TIME VIA NTP, REQUIRED FOR x.509 VALIDATION
+ *****************************************************************************/
+void setClock() {
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov"); //UTC time standard
+
+  Serial.print(F("Waiting for NTP time sync: "));
+  time_t now = time(nullptr);
+  while (now < (8 * 3600 * 2)) {
+    yield();
+    delay(500);
+    Serial.print(F("."));
+    now = time(nullptr);
+  }
+
+  Serial.println(F(""));
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+  Serial.print(F("Current time: "));
+  Serial.print(asctime(&timeinfo));
+}
+ 
+/******************************************************************************
   SYSTEM SETUP ON BOOT
  *****************************************************************************/
 void setup() {
@@ -96,13 +128,16 @@ void setup() {
   //Wifi AP config
   AP_Wifi();
 
-  // Initialize SPI bus
+  //Initialize SPI bus
   SPI.begin();
 
-  // Initialize MFRC522
+  //Initialize MFRC522
   mfrc522.PCD_Init();
-
-  // Initialize Button
+  
+  //Initialize Certificates
+  Certs_Init();
+  
+  //Initialize Button
   updateButton.attachLongPressStart(FirmwareUpdate);
   resetButton.attachClick(Reset);
 }
@@ -220,6 +255,22 @@ void array_to_string(byte array[], unsigned int len, char buffer[]) {
     buffer[i * 2 + 1] = nib2  < 0xA ? '0' + nib2  : 'A' + nib2  - 0xA;
   }
   buffer[len * 2] = '\0';
+}
+
+/******************************************************************************
+  CERTIFICATE INITIALIZATION AND READ
+*****************************************************************************/
+void Certs_Init() {
+  int numCerts = certStore.initCertStore(LittleFS, PSTR("/certs.idx"), PSTR("/certs.ar"));
+  Serial.print(F("Number of CA certs read: "));
+  Serial.println(numCerts);
+
+  if (numCerts == 0) {
+    Serial.println(F("No certs found. Make sure to run certs-from-mozill.py and upload certs.ar..."));
+    
+    //Cannot connect to anything w/o certs
+    return;
+  }
 }
 
 /******************************************************************************
