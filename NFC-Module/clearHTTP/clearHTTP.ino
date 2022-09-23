@@ -5,6 +5,9 @@
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecure.h>
 #include <OneButton.h>
+
+//Include LittleFS header
+#include <LittleFS.h>
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTP/clearHTTP.bin"
 //URL format: https://raw.githubusercontent.com/${user}/${repo}/${branch}/${path}
 //get fingerprint of 'https' by visiting this link https://www.grc.com/fingerprints.htm
@@ -50,6 +53,8 @@ String apiKeyValue = "baeb03e1f140d3009647a77cc93f8828";
 //const char* serverName = "http://dummyendpoint.000webhostapp.com/post-esp-data.php";
 const char* serverName = "https://persona-hris.com/api/nfc";
 String devname;
+//Default devname used for migrating to LittleFS
+//const String def_devname = "S0421CLA0012";
 
 /******************************************************************************
   CALLBACK NOTIFIER FOR OTA
@@ -78,11 +83,18 @@ void setup()
 
   Serial.begin(115200);
 
+  //Set device host name, used for migration to LittleFS
+  //WiFi.hostname(def_devname);
+
   //initialize SPIFFS
-  Initialize_SPIFFS();
+  //Initialize_SPIFFS();
+
+  //Initialize LittleFS
+  Initialize_LittleFS();
 
   //Json config readings
-  FS_Spiffs();
+  //FS_Spiffs();
+  FS_LittleFS();
 
   //Wifi AP config
   AP_Wifi();
@@ -123,6 +135,28 @@ void loop()
 }
 
 /******************************************************************************
+  Initialize SPIFFS Library
+ *****************************************************************************/
+//void Initialize_SPIFFS()
+//{
+//  if (!SPIFFS.begin())
+//  {
+//    Serial.println("An Error has occurred while mounting SPIFFS");
+//    return;
+//  }
+//}
+/******************************************************************************
+  Initialize LittleFS Library
+ *****************************************************************************/
+void Initialize_LittleFS()
+{
+  if (!LittleFS.begin())
+  {
+    Serial.println("An Error has occurred while mounting LittleFS");
+    return;
+  }
+}
+/******************************************************************************
   Callback notifying us of the need to save config
  *****************************************************************************/
 void saveConfigCallback()
@@ -133,21 +167,62 @@ void saveConfigCallback()
 /******************************************************************************
   For AP config during boot up
  *****************************************************************************/
-void FS_Spiffs()
+//void FS_Spiffs()
+//{
+//  Enable_red_LED();
+//  //read config from FS json
+//  //read configuration from FS json
+//  Serial.println("mounting FS...");
+//
+//  //if (SPIFFS.begin())
+//  //{
+//  //Serial.println("mounted file system");
+//  if (SPIFFS.exists("/config.json"))
+//  {
+//    //file exists, reading and loading
+//    Serial.println("reading config file");
+//    File configFile = SPIFFS.open("/config.json", "r");
+//    if (configFile)
+//    {
+//      Serial.println("opened config file");
+//      size_t size = configFile.size();
+//      // Allocate a buffer to store contents of the file.
+//      std::unique_ptr<char[]> buf(new char[size]);
+//
+//      configFile.readBytes(buf.get(), size);
+//      DynamicJsonBuffer jsonBuffer;
+//      JsonObject& json = jsonBuffer.parseObject(buf.get());
+//      json.printTo(Serial);
+//      if (json.success())
+//      {
+//        Serial.println("\nparsed json");
+//        strcpy(output, json["output"]);
+//        //strcpy(orgID, json["orgID"]); //im pretty sure this is what cause the crash.
+//      }
+//      else
+//      {
+//        Serial.println("failed to load json config");
+//      }
+//    }
+//  }
+//  else
+//  {
+//    Serial.println("failed to mount FS");
+//  }
+//}
+
+void FS_LittleFS()
 {
   Enable_red_LED();
   //read config from FS json
   //read configuration from FS json
   Serial.println("mounting FS...");
 
-  //if (SPIFFS.begin())
-  //{
-  //Serial.println("mounted file system");
-  if (SPIFFS.exists("/config.json"))
+  if (LittleFS.exists("/config.json"))
   {
     //file exists, reading and loading
     Serial.println("reading config file");
-    File configFile = SPIFFS.open("/config.json", "r");
+    File configFile = LittleFS.open("/config.json", "r");
     if (configFile)
     {
       Serial.println("opened config file");
@@ -163,7 +238,6 @@ void FS_Spiffs()
       {
         Serial.println("\nparsed json");
         strcpy(output, json["output"]);
-        //strcpy(orgID, json["orgID"]); //im pretty sure this is what cause the crash.
       }
       else
       {
@@ -200,7 +274,9 @@ void AP_Wifi()
     JsonObject& json = jsonBuffer.createObject();
     json["output"] = output;
     //json["orgID"] = orgID;
-    File configFile = SPIFFS.open("/config.json", "w");
+    //File configFile = SPIFFS.open("/config.json", "w");
+    //Migrating to LittleFS from SPIFFS
+    File configFile = LittleFS.open("/config.json", "w");
     if (!configFile)
     {
       Serial.println("failed to open config file for writing");
@@ -225,17 +301,7 @@ void array_to_string(byte array[], unsigned int len, char buffer[])
   }
   buffer[len * 2] = '\0';
 }
-/******************************************************************************
-  Initialize SPIFFS Library
- *****************************************************************************/
-void Initialize_SPIFFS()
-{
-  if (!SPIFFS.begin())
-  {
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
-}
+
 /******************************************************************************
   Reset Button
 *****************************************************************************/
@@ -284,6 +350,8 @@ void Send_live_data(String UIDread, String location, String devid)
   // if (httpsResponseCode = 200), changed operator from
   // '=' to '==', and replaced '200' with 'HTTP_CODE_OK'
   if (httpsResponseCode == 200) {
+    //Debug print line, comment when not needed
+    //Serial.println("Code is successfully updated. This is a feature.");
     Serial.print("Response Code: ");
     Serial.println(httpsResponseCode);
     Serial.print("Response Body: ");
@@ -294,7 +362,6 @@ void Send_live_data(String UIDread, String location, String devid)
       if (httpsResponseBody.substring(26, 42) == "\"Access Granted\"" ||
           httpsResponseBody.substring(26, 42) == "\"NFC Registered\"")
       {
-        Serial.println("Codev2 is successfully updated. This is a new feature.");
         digitalWrite(Beep, HIGH);
         delay(300);
         digitalWrite(Beep, LOW);
@@ -305,7 +372,6 @@ void Send_live_data(String UIDread, String location, String devid)
       if (httpsResponseBody.substring(27, 52) == "\"NFC UID not found on DB\"" ||
           httpsResponseBody.substring(27, 43) == "\"Wrong API key.\"")
       {
-        Serial.println("Codev2 is successfully updated. This is a new feature.");
         for (int i = 0; i < 2; i++)
         {
           Enable_red_LED();
@@ -373,11 +439,11 @@ void FirmwareUpdate()
   client.setInsecure();
 
   // Added optional callback notifiers
-   ESPhttpUpdate.onStart(update_started);
-   ESPhttpUpdate.onEnd(update_finished);
-   ESPhttpUpdate.onProgress(update_progress);
-   ESPhttpUpdate.onError(update_error);
-    
+  ESPhttpUpdate.onStart(update_started);
+  ESPhttpUpdate.onEnd(update_finished);
+  ESPhttpUpdate.onProgress(update_progress);
+  ESPhttpUpdate.onError(update_error);
+
   delay(100);
   t_httpUpdate_return ret = ESPhttpUpdate.update(client, URL_fw_Bin);
   switch (ret)
@@ -429,8 +495,25 @@ void initializeDevID()
 }
 String getdevname()
 {
-  SPIFFS.begin();
-  File fileToRead = SPIFFS.open("/iotconfig.txt", "r");
+  //SPIFFS.begin();
+  //File fileToRead = SPIFFS.open("/iotconfig.txt", "r");
+
+  //Migrating to LittleFS from SPIFFS
+  LittleFS.begin();
+
+  //Added block to check if iotconfig.txt exists, migration to LittleFS
+  //  if (!LittleFS.exists("/iotconfig.txt"))
+  //  {
+  //    Serial.println("iotconfig.txt does not exist!");
+  //    Serial.println("Creating new iotconfig.txt...");
+  //    //Using "w+" access mode to write to a file and generate if it doesn't exist
+  //    File fileToWrite = LittleFS.open("/iotconfig.txt", "w+");
+  //    fileToWrite.print(def_devname);
+  //    delay(10);
+  //    fileToWrite.close();
+  //  }
+
+  File fileToRead = LittleFS.open("/iotconfig.txt", "r");
   int i = 0;
   String deviceid;
   while (fileToRead.available())
