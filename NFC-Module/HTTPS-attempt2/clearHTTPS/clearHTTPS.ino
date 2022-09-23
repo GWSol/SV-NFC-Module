@@ -1,6 +1,6 @@
 /******************************************************************************
   OTA FIRMWARE UPDATE SETUP
- *****************************************************************************/
+******************************************************************************/
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecure.h>
@@ -24,6 +24,7 @@ BearSSL::CertStore certStore;
 
 //Get fingerprint of 'https' by visiting this link https://www.grc.com/fingerprints.htm
 //#define Fingerprint "70 94 DE DD E6 C4 69 48 3A 92 70 A1 48 56 78 2D 18 64 E0 B7"
+
 OneButton updateButton(D1, true);
 
 /******************************************************************************
