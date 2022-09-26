@@ -1,9 +1,13 @@
 /******************************************************************************
+  CERTIFICATE AND SECURE CLIENT SETUP
+******************************************************************************/
+#include "certs.h"
+
+/******************************************************************************
   OTA FIRMWARE UPDATE SETUP
 ******************************************************************************/
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
-#include <WiFiClientSecure.h>
 #include <OneButton.h>
 
 // Include time header
@@ -15,7 +19,7 @@
 // Include LittleFS header
 #include <LittleFS.h>
 
-const String FirmwareVer = {"1.4"};
+const String FirmwareVer = {"1.5"};
 #define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/version.txt"
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/clearHTTPS.bin"
 // URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
@@ -27,7 +31,6 @@ OneButton updateButton(D1, true);
 /******************************************************************************
   ACCESS POINT SETUP
  *****************************************************************************/
-#include <WiFiClientSecureBearSSL.h>
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
@@ -87,47 +90,6 @@ void update_error(int err) {
 }
 
 /******************************************************************************
-  WEBSITE CERTIFICATE SETUP
-******************************************************************************/
-// Declare global CertStore
-#include <CertStoreBearSSL.h>
-BearSSL::CertStore certStore;
-
-// Cert for GitHub access
-static const char trustRoot1[] PROGMEM = R"EOF(
------BEGIN CERTIFICATE-----
-MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
-MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
-d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
-QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
-MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
-b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
-CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
-nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
-43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
-T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
-gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
-BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
-TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
-DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
-hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
-06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
-PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
-YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
-CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
------END CERTIFICATE-----
-)EOF";
-X509List certOTA(trustRoot1);
-
-extern const unsigned char caCert[] PROGMEM;
-extern const unsigned int caCertLen;
-
-// HTTPS fingerprint for posting to server
-// This method may require frequent update of the fingerprint
-static const char fingerprint[] PROGMEM = "5F AB D4 B7 DD 90 D9 3A 64 F4 F4 68 E3 A4 C7 81 FA DF 74 4B";
-
-/******************************************************************************
   SET TIME VIA NTP, REQUIRED FOR x.509 VALIDATION
  *****************************************************************************/
 void setClock() {
@@ -177,7 +139,7 @@ void setup() {
 
   // Print firmware version
   Serial.println("Using clearHTTPS v" + FirmwareVer);
-  
+
   // Print SHA-1 fingerprint
   //Serial.printf("Using fingerprint \"%s\"", fingerprint);
   Serial.println();
@@ -201,13 +163,13 @@ void loop() {
       delay(50);
       return;
     }
-    
+
     // Select one of the cards
     if (!mfrc522.PICC_ReadCardSerial()) {
       delay(50);
       return;
     }
-    
+
     readcard();
   }
 }
@@ -438,9 +400,9 @@ void FirmwareUpdate() {
   }
 
   client.print(String("GET ") + URL_fw_Version + " HTTP/1.1\r\n" +
-                "Host: " + host + "\r\n" +
-                "User-Agent: BuildFailureDetectorESP8266\r\n" +
-                "Connection: close\r\n\r\n");
+               "Host: " + host + "\r\n" +
+               "User-Agent: BuildFailureDetectorESP8266\r\n" +
+               "Connection: close\r\n\r\n");
 
   while (client.connected()) {
     String line = client.readStringUntil('\n');
@@ -452,7 +414,7 @@ void FirmwareUpdate() {
 
   String payload = client.readStringUntil('\n');
   payload.trim();
-  
+
   if (payload.equals(FirmwareVer)) {
     Serial.println("Device is already on the latest firmware version...");
   }
@@ -460,13 +422,13 @@ void FirmwareUpdate() {
     Serial.println("New firmware detected...");
     digitalWrite(Blue, LOW);
     ESPhttpUpdate.setLedPin(Red, LOW);
-    
+
     // Added optional callback notifiers
     ESPhttpUpdate.onStart(update_started);
     ESPhttpUpdate.onEnd(update_finished);
     ESPhttpUpdate.onProgress(update_progress);
     ESPhttpUpdate.onError(update_error);
-  
+
     delay(100);
     t_httpUpdate_return ret = ESPhttpUpdate.update(client, URL_fw_Bin);
     switch (ret) {
@@ -476,11 +438,11 @@ void FirmwareUpdate() {
         OTAerror();
         delay(50);
         break;
-  
+
       case HTTP_UPDATE_NO_UPDATES:
         Serial.println("HTTP_UPDATE_NO_UPDATES");
         break;
-  
+
       case HTTP_UPDATE_OK:
         Serial.println("HTTP_UPDATE_OK");
         break;
