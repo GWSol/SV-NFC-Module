@@ -15,46 +15,12 @@
 // Include LittleFS header
 #include <LittleFS.h>
 
-// Declare global CertStore
-#include <CertStoreBearSSL.h>
-BearSSL::CertStore certStore;
-
-const String FirmwareVer = {"1.3"};
+const String FirmwareVer = {"1.4"};
 #define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/version.txt"
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/clearHTTPS.bin"
 // URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
 const char *host = "raw.githubusercontent.com";
 const int httpsPort = 443;
-
-// DigiCert High Assurance EV Root CA
-const char trustRoot[] PROGMEM = R"EOF(
------BEGIN CERTIFICATE-----
-MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
-MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
-d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
-QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
-MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
-b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
-CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
-nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
-43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
-T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
-gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
-BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
-TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
-DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
-hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
-06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
-PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
-YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
-CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
------END CERTIFICATE-----
-)EOF";
-X509List cert(trustRoot);
-
-extern const unsigned char caCert[] PROGMEM;
-extern const unsigned int caCertLen;
 
 OneButton updateButton(D1, true);
 
@@ -94,7 +60,8 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 String UID;
 
 String apiKeyValue = "baeb03e1f140d3009647a77cc93f8828";
-const char* serverName = "https://persona-hris.com/api/nfc";
+const char *serverName = "https://persona-hris.com/api/nfc";
+const char *serverHost = "persona-hris.com";
 String devname;
 
 // Recovery name on FS format
@@ -120,10 +87,52 @@ void update_error(int err) {
 }
 
 /******************************************************************************
+  WEBSITE CERTIFICATE SETUP
+******************************************************************************/
+// Declare global CertStore
+#include <CertStoreBearSSL.h>
+BearSSL::CertStore certStore;
+
+// Cert for GitHub access
+static const char trustRoot1[] PROGMEM = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+-----END CERTIFICATE-----
+)EOF";
+X509List certOTA(trustRoot1);
+
+extern const unsigned char caCert[] PROGMEM;
+extern const unsigned int caCertLen;
+
+// HTTPS fingerprint for posting to server
+// This method may require frequent update of the fingerprint
+static const char fingerprint[] PROGMEM = "5F AB D4 B7 DD 90 D9 3A 64 F4 F4 68 E3 A4 C7 81 FA DF 74 4B";
+
+/******************************************************************************
   SET TIME VIA NTP, REQUIRED FOR x.509 VALIDATION
  *****************************************************************************/
 void setClock() {
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov"); // UTC time standard
+  // UTC time standard
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
   Serial.print(F("Waiting for NTP time sync: "));
   time_t now = time(nullptr);
@@ -168,6 +177,10 @@ void setup() {
 
   // Print firmware version
   Serial.println("Using clearHTTPS v" + FirmwareVer);
+  
+  // Print SHA-1 fingerprint
+  //Serial.printf("Using fingerprint \"%s\"", fingerprint);
+  Serial.println();
 
   // Initialize Button
   updateButton.attachLongPressStart(FirmwareUpdate);
@@ -188,11 +201,13 @@ void loop() {
       delay(50);
       return;
     }
+    
     // Select one of the cards
     if (!mfrc522.PICC_ReadCardSerial()) {
       delay(50);
       return;
     }
+    
     readcard();
   }
 }
@@ -315,15 +330,14 @@ void Reset() {
 *****************************************************************************/
 void Send_live_data(String UIDread, String location, String devid)
 {
-  // Added code to setup HTTPS client due to moving to HTTPS server
-  std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
-  client->setInsecure();
+  WiFiClientSecure client;
+  client.setFingerprint(fingerprint);
 
   // Changed to HTTPClient httpsPost;
   HTTPClient httpsPost;
 
   // Your Domain name with URL path or IP address with path
-  httpsPost.begin(*client, serverName);
+  httpsPost.begin(client, serverName);
 
   // Specify content-type header
   httpsPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -334,7 +348,7 @@ void Send_live_data(String UIDread, String location, String devid)
   Serial.print("httpsRequestData: ");
   Serial.println(httpsRequestData);
 
-  // Send HTTPS POST request,
+  // Send HTTPS POST request
   int httpsResponseCode = httpsPost.POST(httpsRequestData);
   // Retrieve response body
   String httpsResponseBody = httpsPost.getString();
@@ -417,7 +431,7 @@ void FirmwareUpdate() {
   setClock();
 
   WiFiClientSecure client;
-  client.setTrustAnchors(&cert);
+  client.setTrustAnchors(&certOTA);
   if (!client.connect(host, httpsPort)) {
     Serial.println("Connection failed...");
     return;
@@ -446,8 +460,6 @@ void FirmwareUpdate() {
     Serial.println("New firmware detected...");
     digitalWrite(Blue, LOW);
     ESPhttpUpdate.setLedPin(Red, LOW);
-    //WiFiClientSecure client;
-    //client.setInsecure();
     
     // Added optional callback notifiers
     ESPhttpUpdate.onStart(update_started);
