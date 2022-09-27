@@ -109,7 +109,7 @@ void setClock() {
   Serial.println(F(""));
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  Serial.print(F("Current time: "));
+  Serial.print(F("Current time (UTC): "));
   Serial.print(asctime(&timeinfo));
 }
 
@@ -143,9 +143,6 @@ void setup() {
 
   // Print firmware version
   Serial.println("Using NFC-Module v" + FirmwareVer);
-
-  // Print SHA-1 fingerprint
-  //Serial.printf("Using fingerprint \"%s\"", fingerprint);
   Serial.println();
 
   // Initialize Button
@@ -230,8 +227,7 @@ void FS_LittleFS() {
       }
     }
   }
-  else
-  {
+  else {
     Serial.println("Failed to mount FS...");
   }
 }
@@ -294,8 +290,7 @@ void Reset() {
 /******************************************************************************
   SEND LIVE DATA
 *****************************************************************************/
-void Send_live_data(String UIDread, String location, String devid)
-{
+void Send_live_data(String UIDread, String location, String devid) {
   WiFiClientSecure client;
   client.setTrustAnchors(&certPOST);
 
