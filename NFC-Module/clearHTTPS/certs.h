@@ -29,7 +29,6 @@ YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
 CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 -----END CERTIFICATE-----
 )CERT";
-X509List certOTA(trustRoot1);
 
 // Cert for posting to server
 static const char trustRoot2[] PROGMEM = R"CERT(
@@ -66,9 +65,7 @@ dzxXVqFtMhoOBoewnFs+wfDh6bb66bu9uvMGBns1m8C7QSrqSRHlnjuN0V3mrN/K
 tJe8gzOOIatwO5AkZ8AhJjVhkaDyOT/ilWR5jD+JV/u8
 -----END CERTIFICATE-----
 )CERT";
+
+X509List certOTA(trustRoot1);
 X509List certPOST(trustRoot2);
-
-extern const unsigned char caCert[] PROGMEM;
-extern const unsigned int caCertLen;
-
 #endif
