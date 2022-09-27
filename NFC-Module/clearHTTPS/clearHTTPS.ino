@@ -20,7 +20,7 @@
 // Include LittleFS header
 #include <LittleFS.h>
 
-const String FirmwareVer = {"1.5"};
+const String FirmwareVer = "1.0.6";
 #define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/version.txt"
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/clearHTTPS.bin"
 // URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
@@ -138,8 +138,11 @@ void setup() {
   // Initialize MFRC522
   mfrc522.PCD_Init();
 
+  // Set clock for x.509 validation as soon as WiFi is connected
+  setClock();
+
   // Print firmware version
-  Serial.println("Using clearHTTPS v" + FirmwareVer);
+  Serial.println("Using NFC-Module v" + FirmwareVer);
 
   // Print SHA-1 fingerprint
   //Serial.printf("Using fingerprint \"%s\"", fingerprint);
@@ -294,7 +297,7 @@ void Reset() {
 void Send_live_data(String UIDread, String location, String devid)
 {
   WiFiClientSecure client;
-  client.setFingerprint(fingerprint);
+  client.setTrustAnchors(&certPOST);
 
   // Changed to HTTPClient httpsPost;
   HTTPClient httpsPost;
@@ -390,8 +393,6 @@ void Card_detected(int duration) {
 *****************************************************************************/
 void FirmwareUpdate() {
   Serial.println("Initializing OTA update...");
-
-  setClock();
 
   WiFiClientSecure client;
   client.setTrustAnchors(&certOTA);
