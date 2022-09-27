@@ -1,11 +1,8 @@
 #ifndef CERTS_H
 #define CERTS_H
 
-#include <WiFiClientSecure.h>
-//Removed "WiFiClientSecureBearSSL.h" and "CertStoreBearSSL.h" due to redundancy
-
 // Cert for GitHub access
-static const char trustRoot1[] PROGMEM = R"CERT(
+static const char repoRoot[] PROGMEM = R"CERT(
 -----BEGIN CERTIFICATE-----
 MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
 MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
@@ -31,7 +28,7 @@ CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 )CERT";
 
 // Cert for posting to server
-static const char trustRoot2[] PROGMEM = R"CERT(
+static const char postRoot[] PROGMEM = R"CERT(
 -----BEGIN CERTIFICATE-----
 MIIFjTCCBHWgAwIBAgISA12AE0JU0TYBiGh1MsLQIdzZMA0GCSqGSIb3DQEBCwUA
 MDIxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQD
@@ -65,7 +62,4 @@ dzxXVqFtMhoOBoewnFs+wfDh6bb66bu9uvMGBns1m8C7QSrqSRHlnjuN0V3mrN/K
 tJe8gzOOIatwO5AkZ8AhJjVhkaDyOT/ilWR5jD+JV/u8
 -----END CERTIFICATE-----
 )CERT";
-
-X509List certOTA(trustRoot1);
-X509List certPOST(trustRoot2);
 #endif

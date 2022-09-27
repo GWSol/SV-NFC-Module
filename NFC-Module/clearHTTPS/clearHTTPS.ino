@@ -3,6 +3,11 @@
 ******************************************************************************/
 // Library inclusion of "WiFiClientSecure.h" and certificate keys
 #include "certs.h"
+#include <WiFiClientSecure.h>
+
+// Inclusion of certs in x.509 list
+X509List certOTA(repoRoot);
+X509List certPOST(postRoot);
 
 /******************************************************************************
   OTA FIRMWARE UPDATE SETUP
