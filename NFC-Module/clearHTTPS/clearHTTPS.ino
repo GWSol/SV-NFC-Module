@@ -70,7 +70,6 @@ String UID;
 
 String apiKeyValue = "baeb03e1f140d3009647a77cc93f8828";
 const char *serverName = "https://persona-hris.com/api/nfc";
-const char *serverHost = "persona-hris.com";
 String devname;
 
 // Recovery name on FS format
