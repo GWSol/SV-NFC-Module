@@ -25,14 +25,14 @@ X509List certPOST(postRoot);
 // Include LittleFS header
 #include <LittleFS.h>
 
-const String FirmwareVer = "1.0.6";
+const String FirmwareVer = "1.0.7";
 #define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/version.txt"
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/clearHTTPS.bin"
 // URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
 const char *host = "raw.githubusercontent.com";
 const int httpsPort = 443;
 
-OneButton updateButton(D1, true);
+OneButton updateButton(D3, true);
 
 /******************************************************************************
   ACCESS POINT SETUP
@@ -46,7 +46,7 @@ String header;
 
 WiFiManager wifiManager;
 
-OneButton resetButton(D1, true);
+OneButton resetButton(D3, true);
 
 // Assign location variable for AP config
 char output[40] = "";
@@ -60,11 +60,13 @@ bool shouldSaveConfig = false;
   RFID MODULE SETUP
  *****************************************************************************/
 #include <MFRC522.h>
-#define RST_PIN  D3
 #define SS_PIN  D0
-#define Red D2
-#define Blue D4
-#define Beep D8
+#define RST_PIN D4
+
+#define Red     D1
+#define Blue    D2
+
+#define Beep    D8
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 String UID;
 
