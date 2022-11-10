@@ -25,7 +25,7 @@ X509List certPOST(postRoot);
 // Include LittleFS header
 #include <LittleFS.h>
 
-const String FirmwareVer = "1.0.7";
+const String FirmwareVer = "1.0.8";
 #define URL_fw_Version "/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/version.txt"
 #define URL_fw_Bin "https://raw.githubusercontent.com/GWSol/SV-NFC-Module/master/NFC-Module/clearHTTPS/clearHTTPS.bin"
 // URL format: "https://raw.githubusercontent.com/(user)/(repo)/(branch)/(path)"
@@ -279,7 +279,7 @@ void array_to_string(byte array[], unsigned int len, char buffer[]) {
 
 /******************************************************************************
   RESET BUTTON
-*****************************************************************************/
+******************************************************************************/
 void Reset() {
   Serial.println("Resetting WiFi config...");
   wifiManager.resetSettings();
@@ -295,7 +295,7 @@ void Reset() {
 
 /******************************************************************************
   SEND LIVE DATA
-*****************************************************************************/
+******************************************************************************/
 void Send_live_data(String UIDread, String location, String devid) {
   WiFiClientSecure client;
   client.setTrustAnchors(&certPOST);
@@ -305,6 +305,15 @@ void Send_live_data(String UIDread, String location, String devid) {
 
   // Your Domain name with URL path or IP address with path
   httpsPost.begin(client, serverName);
+
+  /******************************************************************************
+    FAILSAFE SECTION FOR WHEN SSH CERTS EXPIRE
+  ******************************************************************************/
+//  std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
+//  client->setInsecure();
+//  HTTPClient httpsPost;
+//  httpsPost.begin(*client, serverName);
+  /******************************************************************************/
 
   // Specify content-type header
   httpsPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -357,7 +366,7 @@ void Send_live_data(String UIDread, String location, String devid) {
 
 /******************************************************************************
   ENABLE RED LED
-*****************************************************************************/
+******************************************************************************/
 void Enable_red_LED() {
   digitalWrite(Red, HIGH);
   digitalWrite(Blue, LOW);
@@ -365,7 +374,7 @@ void Enable_red_LED() {
 
 /******************************************************************************
   ENABLE BLUE LED
-*****************************************************************************/
+******************************************************************************/
 void Enable_blue_LED() {
   digitalWrite(Red, LOW);
   digitalWrite(Blue, HIGH);
@@ -373,7 +382,7 @@ void Enable_blue_LED() {
 
 /******************************************************************************
   DISABLE BOTH LEDS
-*****************************************************************************/
+******************************************************************************/
 void Disable_LED() {
   digitalWrite(Red, LOW);
   digitalWrite(Blue, LOW);
@@ -381,7 +390,7 @@ void Disable_LED() {
 
 /******************************************************************************
   CARD DETECTION INDICATOR
-*****************************************************************************/
+******************************************************************************/
 void Card_detected(int duration) {
   digitalWrite(Red, HIGH);
   digitalWrite(Blue, HIGH);
@@ -391,7 +400,7 @@ void Card_detected(int duration) {
 
 /******************************************************************************
   OTA FIRMWARE UPDATE
-*****************************************************************************/
+******************************************************************************/
 void FirmwareUpdate() {
   Serial.println("Initializing OTA update...");
 
@@ -455,7 +464,7 @@ void FirmwareUpdate() {
 
 /******************************************************************************
   OTA ERROR ACTION
-*****************************************************************************/
+******************************************************************************/
 void OTAerror() {
   digitalWrite(Beep, HIGH);
   delay(400);
@@ -464,7 +473,7 @@ void OTAerror() {
 
 /******************************************************************************
   EXTRACT UID FROM CARD AND ADD TO JSON STRUCTURE WITH OTHER DATA
-*****************************************************************************/
+******************************************************************************/
 void readcard() {
   Card_detected(200);
   char UIDstr[32] = "";
